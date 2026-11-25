@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вечер — билеты на события</title>
+<meta name="description" content="Учебный интерфейс для лабораторной «Аналитика и KPI». Покупка имитируется.">
+
+<!-- ==================== АНАЛИТИКА: НАСТРОЙКА ====================
+  1. Создайте счётчик в Яндекс.Метрике (metrika.yandex.ru), включите «Вебвизор, карта скроллинга, аналитика форм».
+  2. Впишите номер счётчика в YM_ID ниже.
+  3. (Необязательно) Создайте поток GA4 и впишите Measurement ID в GA_ID (формат G-XXXXXXXXXX).
+  4. В Метрике создайте цели типа «JavaScript-событие» с идентификаторами из списка EVENTS (см. ниже / README).
+================================================================= -->
+<script>
+  window.YM_ID = 114683602;          // <-- номер счётчика Яндекс.Метрики, например 98765432
+  window.GA_ID = "";         // <-- например "G-ABC123XYZ" (можно оставить пустым)
+</script>
+
+<script>
+  // Яндекс.Метрика (стандартный код счётчика, подключается только если задан YM_ID)
+  if (window.YM_ID) {
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();
+    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+    ym(window.YM_ID, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true, trackHash:true });
+  }
+  // Google Analytics 4 (подключается только если задан GA_ID)
+  if (window.GA_ID) {
+    var s = document.createElement("script"); s.async = true;
+    s.src = "https://www.googletagmanager.com/gtag/js?id=" + window.GA_ID; document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function(){ dataLayer.push(arguments); };
+    gtag("js", new Date()); gtag("config", window.GA_ID);
+  }
+</script>
+
+<style>
+  :root{
+    --bg:#f6f5f2; --card:#fff; --ink:#1b1b1f; --muted:#6b6b75; --line:#e4e2dc;
+    --accent:#e2462f; --accent-ink:#fff; --ok:#1f8a4c; --err:#c62828; --chip:#efede7;
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#141416; --card:#1d1d21; --ink:#f1f0ec; --muted:#a3a3ad; --line:#2e2e34; --chip:#26262b; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  a{color:inherit}
+  header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+  .top{display:flex;align-items:center;gap:12px;height:60px}
+  .logo{font-weight:800;font-size:22px;text-decoration:none;letter-spacing:-.02em}
+  .logo span{color:var(--accent)}
+  .city{margin-left:auto;color:var(--muted);font-size:14px}
+  main{padding:20px 0 60px}
+  h1{font-size:28px;margin:4px 0 14px;letter-spacing:-.02em}
+  h2{font-size:20px;margin:22px 0 10px}
+  .muted{color:var(--muted)}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .chip{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:8px 14px;font-size:14px;cursor:pointer}
+  .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  select.chip{appearance:auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;text-align:left;padding:0;color:inherit;font:inherit}
+  .card:hover{border-color:var(--muted)}
+  .poster{height:120px;display:flex;align-items:flex-end;padding:12px;color:#fff;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+  .card .body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1}
+  .card .title{font-weight:700;font-size:17px}
+  .card .meta{font-size:14px;color:var(--muted)}
+  .card .price{margin-top:auto;padding-top:8px;font-weight:700}
+  .empty{padding:30px;text-align:center;background:var(--card);border:1px dashed var(--line);border-radius:var(--radius)}
+  .back{background:none;border:0;color:var(--muted);cursor:pointer;padding:0;font:inherit;margin-bottom:8px}
+  .event{display:grid;grid-template-columns:1.4fr 1fr;gap:24px}
+  @media (max-width:760px){.event{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .facts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:15px;margin:12px 0}
+  .facts dt{color:var(--muted)}
+  .facts dd{margin:0}
+  .tier{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+  .tier input{margin-right:8px}
+  .tier.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .tier.off{opacity:.5;cursor:not-allowed}
+  .qty{display:flex;align-items:center;gap:10px;margin:12px 0}
+  .qty button{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--chip);color:var(--ink);font-size:18px;cursor:pointer}
+  .total{display:flex;justify-content:space-between;font-weight:700;font-size:18px;margin:10px 0 12px}
+  .btn{display:block;width:100%;background:var(--accent);color:var(--accent-ink);border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .steps{display:flex;gap:6px;font-size:13px;color:var(--muted);margin-bottom:10px}
+  .steps b{color:var(--ink)}
+  form .row{margin-bottom:14px}
+  label.l{display:block;font-size:14px;margin-bottom:4px}
+  input[type=text],input[type=email],input[type=tel]{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--card);color:var(--ink)}
+  input.bad{border-color:var(--err)}
+  .hint{font-size:13px;color:var(--muted);margin-top:4px}
+  .error{font-size:13px;color:var(--err);margin-top:4px}
+  .check{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+  .success{text-align:center;max-width:520px;margin:30px auto}
+  .success .ico{width:64px;height:64px;border-radius:50%;background:var(--ok);color:#fff;font-size:34px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+  .ticket{border:1px dashed var(--line);border-radius:12px;padding:14px;margin:16px 0;text-align:left;background:var(--card)}
+  .note{font-size:12px;color:var(--muted);text-align:center;margin-top:30px}
+  #debug{position:fixed;right:10px;bottom:10px;max-width:320px;max-height:40vh;overflow:auto;background:#111;color:#9ef59e;font:12px/1.4 ui-monospace,monospace;padding:8px 10px;border-radius:8px;display:none;z-index:50}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <a class="logo" href="#/" data-nav>Ве<span>ч</span>ер</a>
+    <span class="city">Москва</span>
+  </div>
+</header>
+<main class="wrap" id="app" aria-live="polite"></main>
+<p class="note wrap">Учебный проект. Реальная оплата не производится, данные формы никуда не отправляются.</p>
+<div id="debug"></div>
+
+<script>
+/* ==================== СОБЫТИЯ (тачпойнты) ====================
+  catalog_view      — открыт каталог (старт сценария)
+  filter_apply      — применён фильтр по дате или цене
+  event_open        — открыта карточка события
+  ticket_select     — выбрана категория билета
+  checkout_start    — нажато «Перейти к оформлению» (открыта форма)
+  form_error        — попытка отправки формы с ошибками
+  purchase_success  — заказ оформлен, показан экран успеха (целевое действие)
+  ------------------------------------------------------------
+  Каждое событие уходит в Метрику (ym reachGoal) и GA4 (gtag event).
+  Для проверки откройте сайт с ?debug=1 — события будут видны в углу экрана и в консоли.
+============================================================== */
+const DEBUG = new URLSearchParams(location.search).has("debug");
+const sent = new Set();
+function track(name, params = {}, once = false){
+  if (once && sent.has(name)) return;
+  sent.add(name);
+  try { if (window.YM_ID && window.ym) ym(window.YM_ID, "reachGoal", name, params); } catch(e){}
+  try { if (window.GA_ID && window.gtag) gtag("event", name, params); } catch(e){}
+  if (DEBUG){
+    console.log("[track]", name, params);
+    const d = document.getElementById("debug"); d.style.display = "block";
+    d.insertAdjacentHTML("afterbegin", `<div>${new Date().toLocaleTimeString()} <b>${name}</b> ${JSON.stringify(params)}</div>`);
+  }
+}
+
+/* ==================== ДАННЫЕ ==================== */
+const today = new Date(); today.setHours(0,0,0,0);
+function addDays(n){ const d = new Date(today); d.setDate(d.getDate()+n); return d; }
+function nextDow(dow){ const d = new Date(today); const diff = (dow - d.getDay() + 7) % 7; d.setDate(d.getDate()+diff); return d; }
+const sat = nextDow(6), sun = new Date(sat); sun.setDate(sat.getDate() + 1);
+const EVENTS = [
+  { id:"jazz",   title:"Джаз в старом особняке", type:"Концерт", venue:"Особняк Смирнова", date:sat,        time:"19:00", dur:"2 ч", age:"12+", color:"#2f4b8f",
+    about:"Квартет Алексея Лужина играет стандарты и авторские пьесы. Камерный зал на 120 мест, можно взять напиток в фойе.",
+    tiers:[{n:"Входной",p:1200,left:30},{n:"Партер",p:1900,left:12},{n:"VIP-столик",p:3500,left:0}] },
+  { id:"standup",title:"Стендап: новый материал", type:"Стендап", venue:"Клуб «Подвал»", date:sat,          time:"21:00", dur:"1,5 ч", age:"18+", color:"#8f2f6a",
+    about:"Три комика проверяют новые шутки перед записью спецвыпуска. Без телефонов — их убирают в чехлы на входе.",
+    tiers:[{n:"Стоячий",p:900,left:40},{n:"Сидячий",p:1500,left:6}] },
+  { id:"theatre",title:"«Чайка». Новая постановка", type:"Театр", venue:"Театр на Покровке", date:sun,        time:"18:00", dur:"2 ч 40 мин", age:"16+", color:"#5b3f8f",
+    about:"Современное прочтение Чехова с живой музыкой. Спектакль идёт с одним антрактом.",
+    tiers:[{n:"Балкон",p:1100,left:20},{n:"Амфитеатр",p:2200,left:15},{n:"Партер",p:3900,left:8}] },
+  { id:"indie",  title:"Инди-фест «Тёплый ламповый»", type:"Концерт", venue:"Арт-кластер «Цех»", date:addDays(9), time:"17:00", dur:"6 ч", age:"16+", color:"#c4561f",
+    about:"Шесть молодых групп на двух сценах, фудкорт и маркет винила.",
+    tiers:[{n:"Танцпартер",p:2500,left:200},{n:"Фан-зона",p:4200,left:30}] },
+  { id:"lecture",title:"Лекция: как слушать классику", type:"Лекция", venue:"Библиотека им. Тургенева", date:addDays(1), time:"19:30", dur:"1,5 ч", age:"6+", color:"#2f8f6e",
+    about:"Музыковед объясняет, на что обращать внимание в симфонии, с живыми примерами на рояле.",
+    tiers:[{n:"Общий",p:500,left:50}] },
+  { id:"expo",   title:"Выставка «Город после дождя»", type:"Выставка", venue:"Галерея «Ракурс»", date:sun,   time:"11:00–21:00", dur:"свободно", age:"0+", color:"#3f7f8f",
+    about:"Фотографии Москвы 1960–2020-х. Билет действует весь день, можно выйти и вернуться.",
+    tiers:[{n:"Взрослый",p:600,left:300},{n:"Студенческий",p:350,left:300}] },
+  { id:"orch",   title:"Оркестр играет музыку из игр", type:"Концерт", venue:"Концертный зал «Север»", date:addDays(16), time:"19:00", dur:"2 ч", age:"6+", color:"#8f6a2f",
+    about:"Симфонический оркестр исполняет саундтреки к популярным видеоиграм.",
+    tiers:[{n:"Балкон",p:1800,left:40},{n:"Партер",p:3200,left:22}] },
+  { id:"quiz",   title:"Квиз «Всё о кино»", type:"Квиз", venue:"Бар «Кадр»", date:addDays(2), time:"20:00", dur:"2,5 ч", age:"18+", color:"#4b8f2f",
+    about:"Командная игра на 6 раундов. Команда — от 2 до 8 человек, билет покупается на каждого участника.",
+    tiers:[{n:"Участник",p:700,left:60}] },
+];
+const fmtDate = d => d.toLocaleDateString("ru-RU",{weekday:"short", day:"numeric", month:"long"});
+const rub = n => n.toLocaleString("ru-RU") + " ₽";
+const minPrice = e => Math.min(...e.tiers.filter(t=>t.left>0).map(t=>t.p));
+
+/* ==================== СОСТОЯНИЕ ==================== */
+const state = { when:"all", maxPrice:"any", eventId:null, tier:null, qty:1, order:null, startedAt:null };
+
+/* ==================== РОУТИНГ ==================== */
+const app = document.getElementById("app");
+function go(hash){ location.hash = hash; }
+window.addEventListener("hashchange", render);
+function render(){
+  const h = location.hash.replace(/^#/, "") || "/";
+  const [_, page, id] = h.split("/");
+  window.scrollTo(0,0);
+  if (!page) return viewCatalog();
+  if (page === "event") return viewEvent(id);
+  if (page === "checkout") return viewCheckout();
+  if (page === "done") return viewDone();
+  viewCatalog();
+}
+
+/* ==================== КАТАЛОГ ==================== */
+function inRange(e){
+  const d = e.date;
+  if (state.when === "weekend") return +d === +sat || +d === +sun;
+  if (state.when === "week") return d - today <= 7*864e5;
+  return true;
+}
+function viewCatalog(){
+  if (!state.startedAt) state.startedAt = Date.now();
+  track("catalog_view", {}, true);
+  const list = EVENTS.filter(inRange).filter(e => state.maxPrice==="any" || minPrice(e) <= +state.maxPrice)
+                     .sort((a,b)=>a.date-b.date);
+  app.innerHTML = `
+    <h1>Куда сходить в Москве</h1>
+    <div class="filters" role="group" aria-label="Фильтры">
+      ${[["all","Все даты"],["weekend","Эти выходные"],["week","Ближайшие 7 дней"]].map(([v,t]) =>
+        `<button class="chip" data-when="${v}" aria-pressed="${state.when===v}">${t}</button>`).join("")}
+      <select class="chip" id="price" aria-label="Цена">
+        ${[["any","Любая цена"],["1000","до 1 000 ₽"],["2000","до 2 000 ₽"],["3000","до 3 000 ₽"]].map(([v,t]) =>
+          `<option value="${v}" ${state.maxPrice===v?"selected":""}>${t}</option>`).join("")}
+      </select>
+    </div>
+    <p class="muted" style="margin:-4px 0 12px">Найдено: ${list.length}</p>
+    ${list.length ? `<div class="grid">${list.map(cardHTML).join("")}</div>` :
+      `<div class="empty">По этим условиям ничего не нашлось.<br><button class="chip" id="reset" style="margin-top:10px">Сбросить фильтры</button></div>`}
+  `;
+  app.querySelectorAll("[data-when]").forEach(b => b.onclick = () => { state.when = b.dataset.when; track("filter_apply",{filter:"date", value:state.when}); viewCatalog(); });
+  app.querySelector("#price").onchange = ev => { state.maxPrice = ev.target.value; track("filter_apply",{filter:"price", value:state.maxPrice}); viewCatalog(); };
+  const r = app.querySelector("#reset"); if (r) r.onclick = () => { state.when="all"; state.maxPrice="any"; viewCatalog(); };
+  app.querySelectorAll("[data-id]").forEach(c => c.onclick = () => go("/event/" + c.dataset.id));
+}
+function cardHTML(e){
+  return `<button class="card" data-id="${e.id}">
+    <div class="poster" style="background:linear-gradient(135deg,${e.color},#111)">${e.type} · ${e.age}</div>
+    <div class="body">
+      <div class="title">${e.title}</div>
+      <div class="meta">${fmtDate(e.date)}, ${e.time}</div>
+      <div class="meta">${e.venue}</div>
+      <div class="price">от ${rub(minPrice(e))}</div>
+    </div></button>`;
+}
+
+/* ==================== КАРТОЧКА СОБЫТИЯ ==================== */
+function viewEvent(id, rerender){
+  const e = EVENTS.find(x => x.id === id); if (!e) return go("/");
+  if (state.eventId !== id){ state.eventId = id; state.tier = null; state.qty = 1; }
+  if (!rerender) track("event_open", {event_id:id});
+  const tier = e.tiers.find(t => t.n === state.tier);
+  app.innerHTML = `
+    <button class="back" id="back">← Все события</button>
+    <div class="event">
+      <div>
+        <div class="poster" style="height:180px;border-radius:var(--radius);background:linear-gradient(135deg,${e.color},#111)">${e.type}</div>
+        <h1 style="margin-top:14px">${e.title}</h1>
+        <dl class="facts">
+          <dt>Когда</dt><dd>${fmtDate(e.date)}, ${e.time}</dd>
+          <dt>Где</dt><dd>${e.venue}</dd>
+          <dt>Длительность</dt><dd>${e.dur}</dd>
+          <dt>Возраст</dt><dd>${e.age}</dd>
+        </dl>
+        <p>${e.about}</p>
+        <p class="muted" style="font-size:14px">Возврат: полная стоимость при отказе не позднее чем за 3 дня до события.</p>
+      </div>
+      <div class="panel" aria-label="Выбор билета">
+        <h2 style="margin-top:0">Билеты</h2>
+        ${e.tiers.map(t => `
+          <label class="tier ${t.left? "":"off"} ${state.tier===t.n?"sel":""}">
+            <span><input type="radio" name="tier" value="${t.n}" ${t.left?"":"disabled"} ${state.tier===t.n?"checked":""}>${t.n}
+              <span class="muted" style="font-size:13px"> · ${t.left? (t.left<10? "осталось "+t.left : "есть") : "нет в продаже"}</span></span>
+            <b>${rub(t.p)}</b>
+          </label>`).join("")}
+        <div class="qty" aria-label="Количество">
+          <span>Количество</span>
+          <button id="minus" aria-label="Меньше">−</button><b id="q">${state.qty}</b><button id="plus" aria-label="Больше">+</button>
+        </div>
+        <div class="total"><span>Итого</span><span>${tier ? rub(tier.p*state.qty) : "—"}</span></div>
+        <button class="btn" id="buy" ${tier?"":"disabled"}>${tier ? "Перейти к оформлению" : "Выберите категорию билета"}</button>
+      </div>
+    </div>`;
+  app.querySelector("#back").onclick = () => go("/");
+  app.querySelectorAll("input[name=tier]").forEach(r => r.onchange = () => {
+    state.tier = r.value; track("ticket_select", {event_id:id, tier:r.value}); viewEvent(id, true);
+  });
+  const maxQ = tier ? Math.min(tier.left, 8) : 8;
+  app.querySelector("#minus").onclick = () => { state.qty = Math.max(1, state.qty-1); viewEvent(id, true); };
+  app.querySelector("#plus").onclick  = () => { state.qty = Math.min(maxQ, state.qty+1); viewEvent(id, true); };
+  app.querySelector("#buy").onclick = () => go("/checkout");
+}
+
+/* ==================== ОФОРМЛЕНИЕ ==================== */
+function viewCheckout(){
+  const e = EVENTS.find(x => x.id === state.eventId);
+  const tier = e && e.tiers.find(t => t.n === state.tier);
+  if (!tier) return go("/");
+  track("checkout_start", {event_id:e.id, tier:tier.n, qty:state.qty, value:tier.p*state.qty});
+  app.innerHTML = `
+    <button class="back" id="back">← Назад к событию</button>
+    <div class="steps"><span>Билеты</span>›<b>Данные покупателя</b>›<span>Готово</span></div>
+    <div class="event">
+      <form class="panel" id="f" novalidate>
+        <h1 style="margin-top:0;font-size:24px">Данные покупателя</h1>
+        <div class="row"><label class="l" for="name">Имя и фамилия</label>
+          <input type="text" id="name" autocomplete="name"><div class="error" id="e-name"></div></div>
+        <div class="row"><label class="l" for="email">Электронная почта</label>
+          <input type="email" id="email" autocomplete="email" inputmode="email">
+          <div class="hint">Сюда придут билеты</div><div class="error" id="e-email"></div></div>
+        <div class="row"><label class="l" for="phone">Телефон <span class="muted">(необязательно)</span></label>
+          <input type="tel" id="phone" autocomplete="tel" inputmode="tel" placeholder="+7">
+          <div class="hint">Позвоним, только если событие перенесут</div></div>
+        <div class="row"><label class="check"><input type="checkbox" id="agree"> <span>Согласен с условиями покупки и возврата</span></label>
+          <div class="error" id="e-agree"></div></div>
+        <button class="btn" type="submit">Оплатить ${rub(tier.p*state.qty)}</button>
+        <p class="hint" style="text-align:center">Оплата учебная — деньги не списываются</p>
+      </form>
+      <div class="panel">
+        <h2 style="margin-top:0">Ваш заказ</h2>
+        <p style="margin:0 0 4px"><b>${e.title}</b></p>
+        <p class="muted" style="margin:0 0 10px">${fmtDate(e.date)}, ${e.time} · ${e.venue}</p>
+        <p style="margin:0">${tier.n} × ${state.qty}</p>
+        <div class="total"><span>Итого</span><span>${rub(tier.p*state.qty)}</span></div>
+      </div>
+    </div>`;
+  app.querySelector("#back").onclick = () => go("/event/" + e.id);
+  app.querySelector("#f").onsubmit = ev => {
+    ev.preventDefault();
+    const name = app.querySelector("#name"), email = app.querySelector("#email"), agree = app.querySelector("#agree");
+    const errs = [];
+    const set = (el, id, msg) => { app.querySelector(id).textContent = msg || ""; if (el.classList) el.classList.toggle("bad", !!msg); if (msg) errs.push(id.slice(3)); };
+    set(name, "#e-name", name.value.trim().length < 2 ? "Укажите имя — оно будет на билете" : "");
+    set(email, "#e-email", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()) ? "" : "Проверьте адрес почты, например name@mail.ru");
+    set(agree, "#e-agree", agree.checked ? "" : "Нужно согласиться с условиями");
+    if (errs.length){ track("form_error", {fields: errs.join(",")}); return; }
+    state.order = { id: "V-" + Math.floor(100000 + Math.random()*900000), email: email.value.trim(), e, tier, qty: state.qty };
+    const secs = state.startedAt ? Math.round((Date.now() - state.startedAt)/1000) : null;
+    track("purchase_success", {event_id:e.id, tier:tier.n, qty:state.qty, value:tier.p*state.qty, seconds_from_catalog:secs});
+    go("/done");
+  };
+}
+
+/* ==================== УСПЕХ ==================== */
+function viewDone(){
+  const o = state.order; if (!o) return go("/");
+  app.innerHTML = `
+    <div class="success">
+      <div class="ico">✓</div>
+      <h1>Билеты оформлены</h1>
+      <p class="muted">Заказ ${o.id}. Билеты отправлены на ${o.email}</p>
+      <div class="ticket">
+        <b>${o.e.title}</b><br>
+        <span class="muted">${fmtDate(o.e.date)}, ${o.e.time} · ${o.e.venue}</span><br>
+        ${o.tier.n} × ${o.qty} — ${rub(o.tier.p*o.qty)}
+      </div>
+      <button class="btn ghost" id="more">Посмотреть другие события</button>
+    </div>`;
+  app.querySelector("#more").onclick = () => { state.order = null; go("/"); };
+}
+
+render();
+</script>
+</body>
+</html>
